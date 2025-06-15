@@ -97,6 +97,62 @@ def list_appointments():
         print(f"{a[0]}: with Dr. {a[2]} - {a[4]}")
         print()
 
+def search_appointments_by_patient():
+    name_query = input("Enter the patient's name to search: ").strip()
+
+    query = """
+    SELECT a.id, p.name, d.name, a.appointment_date, a.reason
+    FROM appointments a
+    JOIN patients p ON a.patient_id = p.id
+    JOIN doctors d ON a.doctor_id = d.id
+    WHERE p.name LIKE ?
+    ORDER BY a.appointment_date
+    """
+    results = run_query(query, (f"%{name_query}%",))
+
+    if results:
+        print("\nMatching Appointments:")
+        for a in results:
+            print(f"{a[0]}: {a[1]} with {a[2]} on {a[3]} - {a[4]}")
+            print()
+        else:
+            print("No appointments found for that name.\n.")
+
+def report_appointments_per_doctor():
+    query="""
+    SELECT d.name, COUNT(a.id) as total_appointments
+    FROM doctors d
+    LEFT JOIN appointments a ON d.id = a.doctor_id
+    GROUP BY d.name
+    ORDER BY total_appointments DESC
+    """
+
+    results = run_query(query)
+
+    print("\nAppointments per Doctor:")
+    print("-" * 35)
+    for row in results:
+        print(f"{row[0]: <20} | {row[1]} appointments")
+    print()
+
+def monthly_report():
+    query = """
+    SELECT
+        strftime('%Y-%m', appointment_date) AS month,
+        COUNT(*) as total_appointments
+    FROM appointments
+    GROUP BY month
+    ORDER BY month
+    """
+
+    results = run_query(query)
+
+    print("\nMonthly Appointment Trends:")
+    print("-" * 35)
+    for row in results:
+        print(f"{row[0]} | {row[1]} appointments")
+    print()
+
 def menu():
     while True:
         print("""
@@ -108,9 +164,12 @@ def menu():
     5. List doctors
     6. List appointments
     7. Add appointments
-    8. Exit
+    8. Search Appointments
+    9. View Appointments Per Doctor
+    10. Monthly Appointment Trends
+    11. Exit
     """)
-        choice = input("Choose an option (1-6):")
+        choice = input("Choose an option (1-9):")
         if choice == '1':
             list_patients()
         elif choice == '2':
@@ -126,8 +185,14 @@ def menu():
         elif choice == '7':
          add_appointment()
         elif choice == '8':
-         print("Goodbye!")
-         break
+            search_appointments_by_patient()
+        elif choice == '9':
+            report_appointments_per_doctor()
+        elif choice == '10':
+            monthly_report()
+        elif choice == '11':
+            print("Goodbye!")
+            break
         else:
             print("Invalid option, try again.")
 
